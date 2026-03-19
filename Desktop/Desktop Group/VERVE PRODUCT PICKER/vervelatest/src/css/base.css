@@ -1,0 +1,95 @@
+/* ============================================================
+   BASE — Reset, CSS Variables, Typography
+   Verver Sport dark theme with cyan accent
+   ============================================================ */
+
+:root {
+    --bg-dark: #0a0a0a;
+    --bg-card: #151515;
+    --bg-elevated: #1a1a1a;
+    --bg-input: #222222;
+    --accent-primary: #16E8FF;
+    --accent-hover: #00D4E8;
+    --accent-glow: rgba(22, 232, 255, 0.3);
+    --accent-dim: rgba(22, 232, 255, 0.08);
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --text-muted: #666666;
+    --border-color: #2a2a2a;
+    --border-active: #3a3a3a;
+    --success: #2ecc71;
+    --warning: #f39c12;
+    --danger: #e74c3c;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 16px;
+    --transition: 0.2s ease;
+    --transition-slow: 0.3s ease;
+}
+
+/* ── Boxing accent colour override ── */
+.app-container[data-sport="boxing"] {
+    --accent-primary: #39FF14;
+    --accent-hover: #32E612;
+    --accent-glow: rgba(57, 255, 20, 0.3);
+    --accent-dim: rgba(57, 255, 20, 0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    height: 100%;
+    overflow: hidden;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Typography */
+.font-display {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 1px;
+    line-height: 1.1;
+}
+
+.text-xs { font-size: 10px; }
+.text-sm { font-size: 12px; }
+.text-md { font-size: 14px; }
+.text-lg { font-size: 18px; }
+.text-xl { font-size: 24px; }
+
+.text-muted { color: var(--text-muted); }
+.text-secondary { color: var(--text-secondary); }
+.text-accent { color: var(--accent-primary); }
+
+.label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-secondary);
+}
+
+/* Utility */
+.hidden { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+/* ── Cursor consistency fix ── */
+button, .toggle-switch, .selector-btn, .product-card, .variant-btn,
+.tab-btn, .delivery-card, .colour-swatch, .upload-btn, .checkbox-row,
+.size-btn, .summary-peek, .section-header, .global-value-btn,
+label[class], a { cursor: pointer !important; }
+input, select, textarea { cursor: text; }
+input[type="checkbox"], input[type="radio"] { cursor: pointer; }
+
+

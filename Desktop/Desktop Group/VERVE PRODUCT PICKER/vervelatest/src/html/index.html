@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verver Sport Picker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* __CSS_INJECT__ */
+    </style>
+</head>
+<body>
+    <div class="app-container" id="appContainer">
+        <!-- Left Pane: Product image display -->
+        <div class="left-pane" id="leftPane">
+            <div class="image-display" id="imageDisplay">
+                <div class="image-placeholder" id="imagePlaceholder">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    <span>Select a product to preview</span>
+                </div>
+                <img class="display-image" id="displayImage" src="" alt="Product" style="display:none;">
+            </div>
+            <span style="font-size:10px;color:var(--text-muted);text-align:center;padding:4px 0;display:block;">Images are for guidance purposes only</span>
+        </div>
+
+        <!-- Right Pane: Picker sections -->
+        <div class="right-pane" id="rightPane">
+            <!-- Base layer: All section headers + inline bodies for initial flow -->
+            <div class="right-pane-base" id="rightPaneBase">
+                <!-- Section 1: Collection -->
+                <div class="picker-section" id="section1" data-section="1">
+                    <div class="section-header">
+                        <span class="section-number">1</span>
+                        <span class="section-title">Select Your Sport</span>
+                    </div>
+                    <div class="section-body" id="section1Body"></div>
+                </div>
+
+                <!-- Section 2: Type & Product -->
+                <div class="picker-section locked" id="section2" data-section="2">
+                    <div class="section-header">
+                        <span class="section-number">2</span>
+                        <span class="section-title">Choose Product</span>
+                    </div>
+                    <div class="section-body" id="section2Body"></div>
+                </div>
+
+                <!-- Section 3: Colour / Variant -->
+                <div class="picker-section locked" id="section3" data-section="3">
+                    <div class="section-header">
+                        <span class="section-number">3</span>
+                        <span class="section-title">Select Colour</span>
+                    </div>
+                    <div class="section-body" id="section3Body"></div>
+                </div>
+
+                <!-- Section 4: Header in base layer -->
+                <div class="picker-section locked" id="section4" data-section="4">
+                    <div class="section-header">
+                        <span class="section-number">4</span>
+                        <span class="section-title">Size & Quantity</span>
+                    </div>
+                    <div class="section-body" id="section4Body" style="display:none;"></div>
+                </div>
+
+                <!-- Section 5: Header in base layer -->
+                <div class="picker-section locked" id="section5" data-section="5">
+                    <div class="section-header">
+                        <span class="section-number">5</span>
+                        <span class="section-title">Customisation</span>
+                    </div>
+                    <div class="section-body" id="section5Body" style="display:none;"></div>
+                </div>
+
+                <!-- Section 5.1: Additional Items (Socks) — matchday only, shown dynamically -->
+                <div class="picker-section locked" id="section51base" data-section="51" style="display:none;">
+                    <div class="section-header" id="section51Header">
+                        <span class="section-number">5.1</span>
+                        <span class="section-title">Additional Items</span>
+                    </div>
+                </div>
+
+                <!-- Section 6: Delivery -->
+                <div class="picker-section locked" id="section6" data-section="6">
+                    <div class="section-header">
+                        <span class="section-number">6</span>
+                        <span class="section-title">Delivery</span>
+                    </div>
+                    <div class="section-body" id="section6Body" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- Order Summary — docked at bottom of right pane, above popups -->
+            <div class="order-summary-dock" id="orderSummaryDock" style="display:none;">
+                <div class="order-summary" id="orderSummary">
+                    <div class="summary-peek" id="summaryPeek">
+                        <span class="summary-peek-label">Order Total</span>
+                        <span class="summary-peek-badge" id="summaryPeekBadge">1 item</span>
+                        <span class="summary-peek-value" id="summaryPeekValue">£0.00</span>
+                        <span class="summary-peek-chevron">▴</span>
+                    </div>
+                    <div class="summary-expanded">
+                        <div class="summary-header">Order Summary</div>
+                        <div class="summary-lines" id="summaryLines"></div>
+                        <div class="summary-total" id="summaryTotal">
+                            <span>Total</span>
+                            <span id="summaryTotalValue">£0.00</span>
+                        </div>
+                        <div class="summary-terms">
+                            <label class="terms-checkbox-label">
+                                <input type="checkbox" id="termsCheckbox" class="terms-checkbox">
+                                <span class="terms-check-custom"></span>
+                                <span class="terms-text">I agree to the <a href="#" id="termsLink" class="terms-link">Terms &amp; Delivery Policies</a></span>
+                            </label>
+                        </div>
+                        <div class="summary-actions">
+                            <button class="cta-button primary" id="addToCartBtn" disabled>ADD TO CART</button>
+                            <button class="cta-button secondary" id="submitApprovalBtn" disabled>Submit Order for Approval (7 Day Payment)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generic popup for ANY section in modal mode (S1/S2/S3) -->
+            <div class="section-popup" id="popupGeneric" style="display:none;">
+                <div class="section-popup-header">
+                    <div class="section-popup-title">
+                        <span class="section-number" id="popupGenericNum">1</span>
+                        <span id="popupGenericLabel">Section</span>
+                    </div>
+                    <button class="section-popup-close" id="popupCloseGeneric">✕</button>
+                </div>
+                <div class="section-popup-body" id="popupGenericBody"></div>
+                <div class="section-popup-footer">
+                    <button class="cta-button primary section-popup-done" id="popupDoneGeneric">Done</button>
+                </div>
+            </div>
+
+            <!-- Popup for Section 4 -->
+            <div class="section-popup" id="popupSection4" style="display:none;">
+                <div class="section-popup-header">
+                    <div class="section-popup-title">
+                        <span class="section-number">4</span>
+                        <span>Size & Quantity</span>
+                    </div>
+                    <button class="section-popup-close" id="popupClose4">✕</button>
+                </div>
+                <div class="section-popup-body" id="popupBody4"></div>
+                <div class="section-popup-footer">
+                    <button class="cta-button primary section-popup-done" id="popupDone4">Done</button>
+                </div>
+            </div>
+
+            <!-- Popup for Section 5 -->
+            <div class="section-popup" id="popupSection5" style="display:none;">
+                <div class="section-popup-header">
+                    <div class="section-popup-title">
+                        <span class="section-number">5</span>
+                        <span>Customisation</span>
+                    </div>
+                    <button class="section-popup-close" id="popupClose5">✕</button>
+                </div>
+                <div class="section-popup-body" id="popupBody5"></div>
+                <div class="section-popup-footer">
+                    <button class="cta-button primary section-popup-done" id="popupDone5">Done</button>
+                </div>
+            </div>
+
+            <!-- Popup for Section 5.1 — Additional Items (Match Day Socks) -->
+            <div class="section-popup" id="popupSection51" style="display:none;">
+                <div class="section-popup-header">
+                    <div class="section-popup-title">
+                        <span class="section-number">5.1</span>
+                        <span>Additional Items</span>
+                    </div>
+                    <button class="section-popup-close" id="popupClose51">✕</button>
+                </div>
+                <div class="section-popup-body" id="popupBody51">
+                    <p class="text-sm text-muted">Loading sock options...</p>
+                </div>
+                <div class="section-popup-footer">
+                    <button class="cta-button primary section-popup-done" id="popupDone51">Done</button>
+                </div>
+            </div>
+
+
+            <div class="section-popup" id="popupSection6" style="display:none;">
+                <div class="section-popup-header">
+                    <div class="section-popup-title">
+                        <span class="section-number">6</span>
+                        <span>Delivery</span>
+                    </div>
+                    <button class="section-popup-close" id="popupClose6">✕</button>
+                </div>
+                <div class="section-popup-body" id="popupBody6"></div>
+                <div class="section-popup-footer">
+                    <button class="cta-button primary section-popup-done" id="popupDone6">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal container (size guide etc) -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="modalContent"></div>
+    </div>
+
+    <!-- Policy Summary Popup -->
+    <div class="policy-overlay" id="policySummaryOverlay" style="display:none;">
+        <div class="policy-popup">
+            <div class="policy-popup-header">
+                <span class="policy-popup-title">Returns &amp; Delivery Policy</span>
+                <button class="section-popup-close" id="policySummaryClose">✕</button>
+            </div>
+            <div class="policy-popup-body">
+                <p>If you wish to return any of the products purchased, you have a <strong>21 day period</strong> from when the order was purchased to write to us via email at <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a3cacdc5cce3f5c6d1d5c6f0d3ccd1d78dc0cc8dd6c8">[email&#160;protected]</a></strong>.</p>
+                <p>The email must include your order number &amp; your reason for Return. You will be responsible for Returns Shipping Cost, this is providing a solution cannot be solved to your query.</p>
+                <p>You are responsible for the parcel until it has been received by VerveSport. It is recommended to use the signed-for postage option.</p>
+                <p>The product is to be returned in its original packaging &amp; unused form.</p>
+                <p>A refund will be issued within <strong>7 days</strong> via original payment method.</p>
+                <p>We <strong>DO NOT</strong> accept returns on customised items unless we are at fault.</p>
+            </div>
+            <div class="policy-popup-footer">
+                <button class="cta-button secondary" id="seeAllPoliciesBtn" style="width:100%;">See All Policies</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Policies Popup (scrollable) -->
+    <div class="policy-overlay" id="policyFullOverlay" style="display:none;">
+        <div class="policy-popup policy-popup-full">
+            <div class="policy-popup-header">
+                <span class="policy-popup-title">All Policies</span>
+                <button class="section-popup-close" id="policyFullClose">✕</button>
+            </div>
+            <div class="policy-popup-body policy-scrollable">
+
+                <h3 class="policy-heading">Returns &amp; Refunds Policy</h3>
+                <p>We take immense pride in creating unique sportswear for teams &amp; individuals — we aim to make sure you're 100% satisfied. If for any reason you're not, you have <strong>21 days</strong> from the date you receive your order to write to us.</p>
+
+                <h4 class="policy-subheading">How to Request a Return:</h4>
+                <p>Email us at <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="650c0b030a25330017130036150a17114b060a4b100e">[email&#160;protected]</a></strong> with your Customer Number and the reason for return.</p>
+                <p>Call/Whatsapp us on <strong>+44 7774659341</strong> with your Customer Number and the reason for return.</p>
+                <p><em>Please note: Returns must be approved before sending the item back.</em></p>
+
+                <h4 class="policy-subheading">Return Conditions:</h4>
+                <p>Items must be returned unused and in their original packaging. You are responsible for the return shipping costs, unless the issue cannot be resolved or we are at fault. We strongly recommend using a tracked/signed-for service as you are responsible for the item until it is received by us.</p>
+                <p><strong>Return Address:</strong> VerveSport, Unit 11 Hyperion Building, FY2 0FH, Lancashire, UK</p>
+
+                <h4 class="policy-subheading">Refund Process:</h4>
+                <p>Refunds will be processed within <strong>7 days</strong> of receiving the returned item. Refunds will be issued to your original payment method.</p>
+
+                <h4 class="policy-subheading">Customised Orders:</h4>
+                <p>We <strong>DO NOT</strong> accept returns or offer refunds on customised/personalised items unless there is a clear printing error or fault caused by us. Due to the nature of garment printing, we cannot accept returns for minor imperfections smaller than 1cm, as these fall within acceptable tolerance levels.</p>
+
+                <div class="policy-divider"></div>
+
+                <h3 class="policy-heading">Shipping Information</h3>
+                <p>We offer reliable, fast shipping options across the United Kingdom. All orders are shipped using Royal Mail Tracked services, and no signature is required upon delivery.</p>
+
+                <h4 class="policy-subheading">Standard UK Shipping</h4>
+                <p>FREE on orders over £30 · £2.99 on orders under £30 · Delivery: 2–5 business days</p>
+
+                <h4 class="policy-subheading">Express UK Shipping</h4>
+                <p>£5.00 flat rate · Delivery: 1–2 business days</p>
+
+                <div class="policy-divider"></div>
+
+                <h3 class="policy-heading">Production &amp; Dispatch Times</h3>
+
+                <h4 class="policy-subheading">Teamwear:</h4>
+                <p>Match Day Kits: Peak season (Apr–Oct): 14–21 days | Off-season (Nov–Mar): 10–14 days</p>
+                <p>Pro-X Range (Standard Colours): Immediate dispatch</p>
+                <p>Pro-X Range (Bespoke Colours): 4–5 weeks production time</p>
+                <p>Club Shop items: Available for immediate dispatch</p>
+
+                <h4 class="policy-subheading">Boxing &amp; Activewear:</h4>
+                <p>Fight Night T-Shirts: 3–5 days production</p>
+                <p>Activewear: Immediate dispatch</p>
+                <p>All other products: Available for immediate dispatch.</p>
+                <p><em>At this time, VerveSport only accepts orders within the United Kingdom. We are working on expanding our international shipping options soon. Please contact our team for a bulk order outside of the UK.</em></p>
+
+                <div class="policy-divider"></div>
+
+                <h3 class="policy-heading">Customisation Disclaimer</h3>
+                <p>For customised garments, ensure all details (names, sizes, colours, numbers, etc.) are correct before confirming your order. We do not take responsibility for errors submitted during the order process once production has started.</p>
+
+                <div class="policy-divider"></div>
+
+                <h3 class="policy-heading">Product Imagery &amp; Colours</h3>
+                <p>Product images are for illustrative purposes. Due to screen displays and photography lighting, colours may vary slightly from the final product. Where possible, physical samples or size guides are available upon request for larger team orders.</p>
+
+                <div class="policy-divider"></div>
+
+                <h3 class="policy-heading">Production Errors</h3>
+                <p>In the rare event of a manufacturing or printing error on your order, we will provide a replacement or refund at no additional cost to you. Please report any issues within <strong>72 hours</strong> of receiving your item.</p>
+
+            </div>
+            <div class="policy-popup-footer">
+                <button class="cta-button primary" id="policyFullDone" style="width:100%;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ APPROVAL MODAL — Customer Details ═══ -->
+    <div class="policy-overlay" id="approvalOverlay" style="display:none;">
+        <div class="policy-popup" style="max-width:440px;width:92%;">
+            <div class="policy-popup-header">
+                <h2>Submit for Approval</h2>
+                <button class="policy-popup-close" id="approvalClose">✕</button>
+            </div>
+            <div class="approval-body">
+                <p class="approval-intro">VerveSport will be in contact within 48hrs of submitting this form to check your order &amp; any questions you have. Payment link is active for 7 days.</p>
+
+                <div class="approval-field">
+                    <label class="approval-label">Full Name *</label>
+                    <input type="text" class="approval-input" id="approvalName" placeholder="e.g. John Smith" autocomplete="name">
+                </div>
+
+                <div class="approval-field">
+                    <label class="approval-label">Email Address *</label>
+                    <input type="email" class="approval-input" id="approvalEmail" placeholder="e.g. john@example.com" autocomplete="email">
+                </div>
+
+                <div class="approval-field">
+                    <label class="approval-label">Phone Number</label>
+                    <input type="tel" class="approval-input" id="approvalPhone" placeholder="e.g. 07700 900000" autocomplete="tel">
+                </div>
+
+                <div class="approval-divider"></div>
+                <p class="approval-section-label">Shipping Address</p>
+
+                <div class="approval-field">
+                    <label class="approval-label">Address Line 1 *</label>
+                    <input type="text" class="approval-input" id="approvalAddr1" placeholder="e.g. 14 Park Road" autocomplete="address-line1">
+                </div>
+
+                <div class="approval-field">
+                    <label class="approval-label">Address Line 2</label>
+                    <input type="text" class="approval-input" id="approvalAddr2" placeholder="e.g. Flat 3" autocomplete="address-line2">
+                </div>
+
+                <div class="approval-row">
+                    <div class="approval-field" style="flex:1;">
+                        <label class="approval-label">City *</label>
+                        <input type="text" class="approval-input" id="approvalCity" placeholder="e.g. Manchester" autocomplete="address-level2">
+                    </div>
+                    <div class="approval-field" style="flex:0 0 130px;">
+                        <label class="approval-label">Postcode *</label>
+                        <input type="text" class="approval-input" id="approvalPostcode" placeholder="e.g. M1 4BT" autocomplete="postal-code">
+                    </div>
+                </div>
+
+                <div class="approval-error" id="approvalError" style="display:none;"></div>
+            </div>
+            <div class="policy-popup-footer" style="display:flex;gap:10px;">
+                <button class="cta-button secondary" id="approvalCancel" style="flex:1;">Cancel</button>
+                <button class="cta-button primary" id="approvalSubmit" style="flex:2;">
+                    <span id="approvalSubmitText">Submit Order</span>
+                    <span id="approvalSubmitLoader" style="display:none;">Submitting...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ APPROVAL CONFIRMATION ═══ -->
+    <div class="policy-overlay" id="approvalConfirmOverlay" style="display:none;">
+        <div class="policy-popup" style="max-width:420px;width:92%;text-align:center;padding:32px 24px;">
+            <div class="approval-confirm-icon">✓</div>
+            <h2 style="font-size:18px;margin-bottom:8px;">Order Submitted</h2>
+            <p id="approvalConfirmMsg" style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">A payment link has been sent to your email.</p>
+            <p id="approvalConfirmRef" style="font-size:12px;color:var(--text-muted);margin-bottom:4px;"></p>
+            <p id="approvalConfirmExpiry" style="font-size:12px;color:var(--text-muted);margin-bottom:20px;"></p>
+            <button class="cta-button primary" id="approvalConfirmDone" style="width:100%;">Done</button>
+        </div>
+    </div>
+
+    <script>
+        /* __JS_INJECT__ */
+    </script>
+</body>
+</html>

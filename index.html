@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Graphitecture · Production Manager</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Plain JS — data & utilities (global scope, no Babel needed) -->
+  <script src="js/data.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/db.js"></script>
+
+  <!-- JSX Components — loaded in dependency order -->
+  <script type="text/babel" src="js/members-modal.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/shared.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/login.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/nav.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/exec.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/dashboard.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/project.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/tracker.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/schedule.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/timesheet.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/costs.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/xero.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/history.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/crm.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/docs.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/wizard.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/profile-modal.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/notifications-modal.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/settings-modal.jsx" data-presets="env,react"></script>
+  <script type="text/babel" src="js/ai-panel.jsx" data-presets="env,react"></script>
+
+  <!-- App shell — references all components above, must be last -->
+   <script type="text/babel" src="js/stock.jsx"></script>
+  <script type="text/babel" src="js/app.jsx" data-presets="env,react"></script>
+</body>
+</html>

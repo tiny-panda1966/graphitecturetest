@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Input</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #111;
+    color: #fff;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    user-select: none;
+  }
+  .status { font-size: 15px; color: #aaa; text-align: center; line-height: 1.5; }
+  .status.active { color: #fff; }
+  .status.error { color: #f66; }
+  .transcript {
+    font-size: 18px;
+    font-weight: 500;
+    text-align: center;
+    padding: 0 24px;
+    min-height: 28px;
+    max-width: 100%;
+    word-wrap: break-word;
+  }
+  .mic-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid #333;
+    background: #222;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .mic-btn:hover { border-color: #555; background: #2a2a2a; }
+  .mic-btn.listening {
+    border-color: #c00;
+    background: #2a1111;
+    animation: pulse-ring 1.5s ease-out infinite;
+  }
+  .mic-btn.done {
+    border-color: #0a0;
+    background: #112a11;
+  }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(204,0,0,0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(204,0,0,0); }
+    100% { box-shadow: 0 0 0 0 rgba(204,0,0,0); }
+  }
+  .bars {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    height: 30px;
+  }
+  .bars .bar {
+    width: 4px;
+    background: #c00;
+    border-radius: 2px;
+    animation: bar-bounce 0.6s ease-in-out infinite alternate;
+  }
+  .bars .bar:nth-child(1) { height: 8px; animation-delay: 0s; }
+  .bars .bar:nth-child(2) { height: 16px; animation-delay: 0.1s; }
+  .bars .bar:nth-child(3) { height: 24px; animation-delay: 0.2s; }
+  .bars .bar:nth-child(4) { height: 16px; animation-delay: 0.3s; }
+  .bars .bar:nth-child(5) { height: 8px; animation-delay: 0.4s; }
+  @keyframes bar-bounce {
+    from { transform: scaleY(0.3); }
+    to { transform: scaleY(1); }
+  }
+  .hint { font-size: 12px; color: #555; position: absolute; bottom: 16px; }
+</style>
+</head>
+<body>
+
+<div class="transcript" id="transcript"></div>
+
+<button class="mic-btn" id="micBtn" onclick="toggleListening()">
+  <svg id="micIcon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="9" y="1" width="6" height="12" rx="3"/>
+    <path d="M19 10v1a7 7 0 01-14 0v-1"/>
+    <line x1="12" y1="18" x2="12" y2="23"/>
+    <line x1="8" y1="23" x2="16" y2="23"/>
+  </svg>
+  <div class="bars" id="bars" style="display:none">
+    <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+  </div>
+</button>
+
+<div class="status" id="status">Click the mic to start speaking</div>
+<div class="hint">Window closes automatically after capture</div>
+
+<script>
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const micBtn = document.getElementById('micBtn');
+  const micIcon = document.getElementById('micIcon');
+  const bars = document.getElementById('bars');
+  const statusEl = document.getElementById('status');
+  const transcriptEl = document.getElementById('transcript');
+
+  let recognition = null;
+  let isListening = false;
+  let finalTranscript = '';
+
+  if (!SpeechRecognition) {
+    statusEl.textContent = 'Speech recognition not supported. Use Chrome or Edge.';
+    statusEl.className = 'status error';
+    micBtn.style.opacity = 0.3;
+    micBtn.style.pointerEvents = 'none';
+  } else {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-GB';
+
+    recognition.onstart = () => {
+      isListening = true;
+      micBtn.className = 'mic-btn listening';
+      micIcon.style.display = 'none';
+      bars.style.display = 'flex';
+      statusEl.textContent = 'Listening... speak now';
+      statusEl.className = 'status active';
+    };
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      finalTranscript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      transcriptEl.textContent = finalTranscript || interim;
+    };
+
+    recognition.onerror = (event) => {
+      isListening = false;
+      micBtn.className = 'mic-btn';
+      micIcon.style.display = 'block';
+      bars.style.display = 'none';
+      if (event.error === 'not-allowed') {
+        statusEl.textContent = 'Microphone denied. Allow access and try again.';
+        statusEl.className = 'status error';
+      } else if (event.error !== 'aborted') {
+        statusEl.textContent = 'Error: ' + event.error;
+        statusEl.className = 'status error';
+      }
+    };
+
+    recognition.onend = () => {
+      isListening = false;
+      bars.style.display = 'none';
+      micIcon.style.display = 'block';
+
+      if (finalTranscript.trim()) {
+        // Success — send back to parent and close
+        micBtn.className = 'mic-btn done';
+        statusEl.textContent = 'Sent!';
+        statusEl.className = 'status active';
+
+        // Send transcript to opener (the iframe window)
+        if (window.opener) {
+          window.opener.postMessage(
+            { type: 'voice-transcript', text: finalTranscript.trim() },
+            '*'
+          );
+        }
+
+        // Close after brief delay so user sees "Sent!"
+        setTimeout(() => window.close(), 600);
+      } else {
+        micBtn.className = 'mic-btn';
+        statusEl.textContent = 'No speech detected. Click mic to try again.';
+        statusEl.className = 'status';
+      }
+    };
+
+    // Auto-start on load
+    setTimeout(() => toggleListening(), 300);
+  }
+
+  function toggleListening() {
+    if (!recognition) return;
+    if (isListening) {
+      recognition.stop();
+    } else {
+      finalTranscript = '';
+      transcriptEl.textContent = '';
+      try {
+        recognition.start();
+      } catch(e) {
+        statusEl.textContent = 'Could not start. Try again.';
+        statusEl.className = 'status error';
+      }
+    }
+  }
+</script>
+</body>
+</html>

@@ -3,7 +3,18 @@ function App() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
-  const handleLogin = (user) => { setCurrentUser(user); setLoggedIn(true); };
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    setLoggedIn(true);
+    // Notification: user logged in (admin only)
+    if (DB.isLive()) {
+      DB.addNotification({
+        recipientEmail: "tiny.panda@tiny-panda.com", type: "user_login",
+        message: (user.name || user.email) + " logged in",
+        read: false, timestamp: new Date()
+      }).catch(function() {});
+    }
+  };
   const handleLogout = () => { setLoggedIn(false); setCurrentUser(null); };
 
   if (!loggedIn) return <LoginScreen onLogin={handleLogin} />;
@@ -474,6 +485,13 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
         console.log("Project deleted:", projectId, result);
       }).catch(function(err) { console.error("DB: Failed to delete project", err); });
 
+      // Notification: project deleted
+      DB.addNotification({
+        scope: "global", projectId: projectId, type: "project_deleted",
+        message: "Project deleted: " + (meta && meta.info ? meta.info.project : projectId) + " by " + (userName || userEmail),
+        read: false, timestamp: new Date()
+      }).catch(function() {});
+
       // Delete project folder from R2
       if (folderKey) {
         DB.workerRequest("DELETE", "/folder/" + folderKey).then(function(res) {
@@ -592,6 +610,13 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
         user: logEntry.user,
         timestamp: new Date()
       }).catch(function(err) { console.error("DB: Failed to save activity log", err); });
+
+      // Notification: project created
+      DB.addNotification({
+        scope: "global", projectId: newId, type: "project_created",
+        message: "New project created: " + info.project + " (" + info.ref + ") by " + (userName || userEmail),
+        read: false, timestamp: new Date()
+      }).catch(function() {});
     }
 
     // Auto-create default folders in R2 storage (ignore errors)

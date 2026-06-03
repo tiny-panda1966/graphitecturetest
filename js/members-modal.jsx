@@ -37,8 +37,8 @@ function MembersModal({ onClose, userEmail }) {
     DB.updateMember(editingId, editForm).then(function() {
       setSaving(false); setEditingId(null);
       setToast("Saved"); setTimeout(function() { setToast(""); }, 2000);
-      // Reload
       DB.getAllMembers().then(function(data) { setMembers(data || []); });
+      DB.addNotification({ scope: "global", type: "member_updated", message: "Member updated: " + editForm.name + " (" + editForm.role + ")", read: false, timestamp: new Date() }).catch(function() {});
     }).catch(function(err) { setSaving(false); console.error("Save failed:", err); });
   };
 
@@ -50,6 +50,7 @@ function MembersModal({ onClose, userEmail }) {
       setNewMember({ email: "", password: "", name: "", role: "production", active: true });
       setToast("Member added"); setTimeout(function() { setToast(""); }, 2000);
       DB.getAllMembers().then(function(data) { setMembers(data || []); });
+      DB.addNotification({ scope: "global", type: "member_added", message: "New team member added: " + newMember.name + " (" + newMember.role + ")", read: false, timestamp: new Date() }).catch(function() {});
     }).catch(function(err) { setSaving(false); console.error("Add failed:", err); });
   };
 
@@ -58,6 +59,7 @@ function MembersModal({ onClose, userEmail }) {
     DB.updateMember(member._id, { active: newActive }).then(function() {
       setToast(newActive ? "Activated" : "Deactivated"); setTimeout(function() { setToast(""); }, 2000);
       DB.getAllMembers().then(function(data) { setMembers(data || []); });
+      DB.addNotification({ scope: "global", type: "member_status", message: "Member " + (newActive ? "activated" : "deactivated") + ": " + member.name, read: false, timestamp: new Date() }).catch(function() {});
     }).catch(function(err) { console.error("Toggle failed:", err); });
   };
 

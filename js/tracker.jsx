@@ -182,6 +182,31 @@ function Tracker({ items, setItems, addHistory, highlightItemDescs, projectId, a
         }
       }
     }
+
+    // Notification: step completed
+    if (DB.isLive()) {
+      DB.addNotification({
+        scope: "global", projectId: projectId, type: "step_completed",
+        message: item.desc + " → " + (task ? task.label : info.taskId) + " completed" + (modalTime > 0 ? " (" + modalTime + " min)" : ""),
+        read: false, timestamp: new Date()
+      }).catch(function() {});
+
+      // Check if ALL items in project are now finished
+      var allFinished = items.every(function(i) {
+        if (i.id === info.itemId) {
+          var updatedTasks = i.tasks.map(function(t) { return t.id === info.taskId ? Object.assign({}, t, { status: info.newStatus }) : t; });
+          return calcItemStatus(updatedTasks) === "FINISHED";
+        }
+        return i.status === "FINISHED";
+      });
+      if (allFinished && items.length > 0) {
+        DB.addNotification({
+          scope: "global", projectId: projectId, type: "project_completed",
+          message: "Project completed — all items finished: " + (currentProject ? currentProject.info.project : projectId),
+          read: false, timestamp: new Date()
+        }).catch(function() {});
+      }
+    }
   };
 
   // Confirm packing modal
@@ -614,7 +639,14 @@ function Tracker({ items, setItems, addHistory, highlightItemDescs, projectId, a
       if (res.ok) {
         setItems(function(prev) { return prev.map(function(i) { return i.id === fileChangeItemId ? Object.assign({}, i, { file: safeName }) : i; }); });
         addHistory({ type: "line", detail: "Artwork uploaded: " + safeName + " for " + item.desc });
-        if (DB.isLive()) DB.updateLineItem(projectId, fileChangeItemId, { file: safeName }).catch(function() {});
+        if (DB.isLive()) {
+          DB.updateLineItem(projectId, fileChangeItemId, { file: safeName }).catch(function() {});
+          DB.addNotification({
+            scope: "global", projectId: projectId, type: "artwork_uploaded",
+            message: "Artwork uploaded: " + safeName + " for " + item.desc,
+            read: false, timestamp: new Date()
+          }).catch(function() {});
+        }
       }
     }).catch(function(err) { console.error("Upload failed:", err); });
     setFileChangeItemId(null);
@@ -630,7 +662,14 @@ function Tracker({ items, setItems, addHistory, highlightItemDescs, projectId, a
     }
     setItems(function(prev) { return prev.map(function(i) { return i.id === itemObj.id ? Object.assign({}, i, { file: "TBC" }) : i; }); });
     addHistory({ type: "line", detail: "Artwork removed from " + itemObj.desc });
-    if (DB.isLive()) DB.updateLineItem(projectId, itemObj.id, { file: "TBC" }).catch(function() {});
+    if (DB.isLive()) {
+      DB.updateLineItem(projectId, itemObj.id, { file: "TBC" }).catch(function() {});
+      DB.addNotification({
+        scope: "global", projectId: projectId, type: "file_removed",
+        message: "Artwork removed from " + itemObj.desc,
+        read: false, timestamp: new Date()
+      }).catch(function() {});
+    }
   };
 
   var renameFile = function(itemObj, newName) {

@@ -50,6 +50,7 @@ function StockView({ stockData, onStockUpdated }) {
       setSaving(false); setEditingId(null); setEditForm({});
       setToast("Saved"); setTimeout(function() { setToast(""); }, 2000);
       if (onStockUpdated) onStockUpdated();
+      DB.addNotification({ scope: "global", type: "stock_updated", message: "Stock item updated: " + (data.material || data.materialCode), read: false, timestamp: new Date() }).catch(function() {});
     }).catch(function(err) { setSaving(false); console.error("Save failed:", err); });
   };
 

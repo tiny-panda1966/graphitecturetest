@@ -95,6 +95,13 @@ function CostsView({ chargesData, onChargesUpdated }) {
       setToast("Saved " + editing);
       setTimeout(function() { setToast(""); }, 2000);
       if (onChargesUpdated) onChargesUpdated();
+
+      // Notification: charges updated
+      DB.addNotification({
+        scope: "global", type: "charges_updated",
+        message: "Charge rates updated: " + editing + " by " + (editItems.length) + " items",
+        read: false, timestamp: new Date()
+      }).catch(function() {});
     }).catch(function(err) {
       setSaving(false);
       console.error("Failed to save charges:", err);

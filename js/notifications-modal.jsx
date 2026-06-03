@@ -61,25 +61,27 @@ function NotificationsModal({ userEmail, onClose, onCountUpdate }) {
 
   var typeStyle = function(type) {
     var map = {
-      "project_created": { bg: "#e8f5e9", icon: "📁", label: "Project" },
-      "project_completed": { bg: "#e3f2fd", icon: "✓", label: "Complete" },
-      "project_deleted": { bg: "#ffebee", icon: "🗑", label: "Deleted" },
-      "step_completed": { bg: "#f3e5f5", icon: "⚙", label: "Step" },
-      "artwork_uploaded": { bg: "#e0f7fa", icon: "📎", label: "Artwork" },
-      "file_removed": { bg: "#fff3e0", icon: "✕", label: "File" },
-      "doc_uploaded": { bg: "#e0f7fa", icon: "📄", label: "Document" },
-      "charges_updated": { bg: "#fce4ec", icon: "£", label: "Charges" },
-      "stock_updated": { bg: "#e8eaf6", icon: "📦", label: "Stock" },
-      "member_added": { bg: "#e0f2f1", icon: "👤", label: "Team" },
-      "member_updated": { bg: "#e0f2f1", icon: "👤", label: "Team" },
-      "member_status": { bg: "#e0f2f1", icon: "👤", label: "Team" },
-      "user_login": { bg: "#f5f5f5", icon: "🔑", label: "Login" },
-      "user_logout": { bg: "#f5f5f5", icon: "🔒", label: "Logout" },
-      "social_approval": { bg: "#e8f5e9", icon: "📷", label: "Social" },
-      "general": { bg: "#f5f5f5", icon: "●", label: "General" }
+      "project_created": { icon: "+", label: "Project" },
+      "project_completed": { icon: "✓", label: "Complete" },
+      "project_deleted": { icon: "×", label: "Deleted" },
+      "step_completed": { icon: "●", label: "Step" },
+      "artwork_uploaded": { icon: "↑", label: "Artwork" },
+      "file_removed": { icon: "−", label: "File" },
+      "doc_uploaded": { icon: "↑", label: "Document" },
+      "charges_updated": { icon: "£", label: "Charges" },
+      "stock_updated": { icon: "■", label: "Stock" },
+      "member_added": { icon: "+", label: "Team" },
+      "member_updated": { icon: "✎", label: "Team" },
+      "member_status": { icon: "●", label: "Team" },
+      "user_login": { icon: "→", label: "Login" },
+      "user_logout": { icon: "←", label: "Logout" },
+      "social_approval": { icon: "✓", label: "Social" },
+      "general": { icon: "●", label: "General" }
     };
     return map[type] || map.general;
   };
+
+  var iconCircle = { width: 28, height: 28, borderRadius: "50%", background: "#222", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#999", flexShrink: 0, marginTop: 2, fontWeight: 500 };
 
   var renderItem = function(n, isArchive) {
     var ts = typeStyle(n.type);
@@ -90,14 +92,14 @@ function NotificationsModal({ userEmail, onClose, onCountUpdate }) {
           opacity: isArchive ? 0.6 : 1 }}
         onMouseEnter={function(e) { if (!isArchive) e.currentTarget.style.background = "#f0f0f0"; }}
         onMouseLeave={function(e) { if (!isArchive) e.currentTarget.style.background = "#fafafa"; }}>
-        <div style={{ width: 28, height: 28, borderRadius: "50%", background: ts.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0, marginTop: 2 }}>
+        <div style={iconCircle}>
           {ts.icon}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: isArchive ? 400 : 500, color: isArchive ? "#888" : "#111" }}>{n.message}</div>
           <div style={{ fontSize: 10, color: "#999", marginTop: 3, display: "flex", gap: 8, flexWrap: "wrap" }}>
             {n.timestamp && <span>{fmtDate(n.timestamp)}</span>}
-            <span style={{ padding: "1px 6px", borderRadius: 3, background: ts.bg, color: "#666", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+            <span style={{ padding: "1px 6px", borderRadius: 3, background: "#f0f0f0", color: "#666", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.03em" }}>
               {ts.label}
             </span>
           </div>

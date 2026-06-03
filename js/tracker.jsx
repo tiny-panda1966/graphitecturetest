@@ -158,8 +158,6 @@ function Tracker({ items, setItems, addHistory, highlightItemDescs, projectId, a
       DB.updateLineItem(projectId, info.itemId, {
         status: calcItemStatus(updatedTasks)
       }).catch(function(err) { console.error("DB: Failed to update line item status", err); });
-
-      DB.publishChange(projectId, "stepCompleted");
     }
   };
 

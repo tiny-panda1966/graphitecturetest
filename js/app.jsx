@@ -360,6 +360,9 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
         user: fullEntry.user,
         timestamp: new Date()
       }).catch(function(err) { console.error("DB: Failed to save activity log", err); });
+
+      // Notify other users via Pusher
+      DB.publishChange(selectedProjectId, fullEntry.type || "update");
     }
   };
 

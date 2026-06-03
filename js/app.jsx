@@ -885,12 +885,32 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
       <div className="app-content">
         {page === "exec" && <ProjectsList projects={liveProjects} onSelect={goToProject} activeProjectId={selectedProjectId} onCreateNew={() => setShowCreateWizard(true)} onDeleteProject={handleDeleteProject} highlightItemDescs={highlightItemDescs} />}
         {page === "dashboard" && <Dashboard allProjects={projectsMeta} projectData={projectData} onSelectProject={(id) => { setSelectedProjectId(id); setPage("tracker"); }} />}
-        {page === "scheduler" && <Scheduler allProjects={liveProjects} projectData={projectData} onSelectProject={(id) => { setSelectedProjectId(id); setPage("tracker"); }} onScheduleChange={function(pid, newSchedule, updatedItems) {
+        {page === "scheduler" && <Scheduler allProjects={liveProjects} projectData={projectData} onSelectProject={(id) => { setSelectedProjectId(id); setPage("tracker"); }} onScheduleChange={function(pid, itemIdOrSchedule, dataOrItems) {
+            // Handle drag-and-drop date change: (pid, itemId, { startDate, deliveryDate })
+            if (typeof itemIdOrSchedule === "string" && dataOrItems && dataOrItems.deliveryDate) {
+              var itemId = itemIdOrSchedule;
+              var newDelivery = dataOrItems.deliveryDate;
+              setProjectData(function(prev) {
+                var next = Object.assign({}, prev);
+                var updated = Object.assign({}, next[pid]);
+                updated.items = (updated.items || []).map(function(i) {
+                  return i.id === itemId ? Object.assign({}, i, { deliveryDate: newDelivery }) : i;
+                });
+                next[pid] = updated;
+                return next;
+              });
+              if (DB.isLive()) {
+                DB.updateLineItem(pid, itemId, { deliveryDate: newDelivery }).catch(function(err) { console.error("DB: Failed to update delivery date", err); });
+              }
+              addHistory({ type: "schedule", detail: "Rescheduled item via drag" });
+              return;
+            }
+            // Handle legacy format: (pid, newSchedule, updatedItems)
             setProjectData(function(prev) {
               var next = Object.assign({}, prev);
               var updated = Object.assign({}, next[pid]);
-              if (newSchedule) updated.schedule = newSchedule;
-              if (updatedItems) updated.items = updatedItems;
+              if (itemIdOrSchedule && Array.isArray(itemIdOrSchedule)) updated.schedule = itemIdOrSchedule;
+              if (dataOrItems && Array.isArray(dataOrItems)) updated.items = dataOrItems;
               next[pid] = updated;
               return next;
             });

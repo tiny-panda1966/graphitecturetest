@@ -260,6 +260,10 @@ var DB = (function() {
       return request("markAllNotificationsRead", { email: email });
     },
 
+    clearReadNotifications: function(email) {
+      return request("clearReadNotifications", { email: email });
+    },
+
     // ── Invoices ──
     getInvoices: function(projectId) {
       return request("getInvoices", { projectId: projectId });

@@ -1,14 +1,13 @@
 // ═══════════════════════════════════════════════════════════════
-// NOTIFICATIONS MODAL — loads from DB, shows global + personal
+// NOTIFICATIONS MODAL — For You / System / Archive tabs
 // ═══════════════════════════════════════════════════════════════
 
-function NotificationsModal({ userEmail, onClose }) {
+function NotificationsModal({ userEmail, onClose, onCountUpdate }) {
 
   var [notifications, setNotifications] = useState([]);
   var [loading, setLoading] = useState(true);
-  var [filter, setFilter] = useState("all"); // "all", "personal", "global"
+  var [tab, setTab] = useState("foryou");
 
-  // Load notifications from DB
   useEffect(function() {
     if (DB.isLive() && userEmail) {
       DB.getNotifications(userEmail).then(function(data) {
@@ -23,7 +22,6 @@ function NotificationsModal({ userEmail, onClose }) {
     }
   }, []);
 
-  // Mark single notification as read
   var markRead = function(id) {
     if (DB.isLive()) {
       DB.markNotificationRead(id).catch(function(err) { console.error("DB: Failed to mark read", err); });
@@ -31,9 +29,9 @@ function NotificationsModal({ userEmail, onClose }) {
     setNotifications(function(prev) {
       return prev.map(function(n) { return n._id === id ? Object.assign({}, n, { read: true }) : n; });
     });
+    if (onCountUpdate) onCountUpdate();
   };
 
-  // Mark all as read
   var markAllRead = function() {
     if (DB.isLive() && userEmail) {
       DB.markAllNotificationsRead(userEmail).catch(function(err) { console.error("DB: Failed to mark all read", err); });
@@ -41,28 +39,74 @@ function NotificationsModal({ userEmail, onClose }) {
     setNotifications(function(prev) {
       return prev.map(function(n) { return Object.assign({}, n, { read: true }); });
     });
+    if (onCountUpdate) onCountUpdate();
   };
 
-  // Filter
-  var filtered = notifications;
-  if (filter === "personal") {
-    filtered = notifications.filter(function(n) { return n.scope !== "global"; });
-  } else if (filter === "global") {
-    filtered = notifications.filter(function(n) { return n.scope === "global"; });
-  }
+  var clearArchive = function() {
+    if (DB.isLive() && userEmail) {
+      DB.clearReadNotifications(userEmail).catch(function(err) { console.error("DB: Failed to clear archive", err); });
+    }
+    setNotifications(function(prev) {
+      return prev.filter(function(n) { return !n.read; });
+    });
+  };
 
-  var unreadCount = notifications.filter(function(n) { return !n.read; }).length;
+  var unread = notifications.filter(function(n) { return !n.read; });
+  var forYou = unread.filter(function(n) { return n.scope !== "global"; });
+  var system = unread.filter(function(n) { return n.scope === "global"; });
+  var archive = notifications.filter(function(n) { return n.read; });
+  var unreadCount = unread.length;
 
-  // Type styling
+  var tabItems = tab === "foryou" ? forYou : tab === "system" ? system : archive;
+
   var typeStyle = function(type) {
     var map = {
-      "social_approval": { bg: "#e8f5e9", icon: "📷", label: "Social Media" },
-      "project_complete": { bg: "#e3f2fd", icon: "✓", label: "Project Complete" },
-      "task_update": { bg: "#f0f0f0", icon: "⚙", label: "Task Update" },
-      "system": { bg: "#f5f5f5", icon: "●", label: "System" },
+      "project_created": { bg: "#e8f5e9", icon: "📁", label: "Project" },
+      "project_completed": { bg: "#e3f2fd", icon: "✓", label: "Complete" },
+      "project_deleted": { bg: "#ffebee", icon: "🗑", label: "Deleted" },
+      "step_completed": { bg: "#f3e5f5", icon: "⚙", label: "Step" },
+      "artwork_uploaded": { bg: "#e0f7fa", icon: "📎", label: "Artwork" },
+      "file_removed": { bg: "#fff3e0", icon: "✕", label: "File" },
+      "doc_uploaded": { bg: "#e0f7fa", icon: "📄", label: "Document" },
+      "charges_updated": { bg: "#fce4ec", icon: "£", label: "Charges" },
+      "stock_updated": { bg: "#e8eaf6", icon: "📦", label: "Stock" },
+      "member_added": { bg: "#e0f2f1", icon: "👤", label: "Team" },
+      "member_updated": { bg: "#e0f2f1", icon: "👤", label: "Team" },
+      "member_status": { bg: "#e0f2f1", icon: "👤", label: "Team" },
+      "user_login": { bg: "#f5f5f5", icon: "🔑", label: "Login" },
+      "user_logout": { bg: "#f5f5f5", icon: "🔒", label: "Logout" },
+      "social_approval": { bg: "#e8f5e9", icon: "📷", label: "Social" },
       "general": { bg: "#f5f5f5", icon: "●", label: "General" }
     };
     return map[type] || map.general;
+  };
+
+  var renderItem = function(n, isArchive) {
+    var ts = typeStyle(n.type);
+    return (
+      <div key={n._id} onClick={function() { if (!isArchive && !n.read) markRead(n._id); }}
+        style={{ padding: "12px 24px", borderBottom: "1px solid #f5f5f5", display: "flex", gap: 12, alignItems: "flex-start",
+          background: isArchive ? "transparent" : "#fafafa", cursor: isArchive ? "default" : "pointer",
+          opacity: isArchive ? 0.6 : 1 }}
+        onMouseEnter={function(e) { if (!isArchive) e.currentTarget.style.background = "#f0f0f0"; }}
+        onMouseLeave={function(e) { if (!isArchive) e.currentTarget.style.background = "#fafafa"; }}>
+        <div style={{ width: 28, height: 28, borderRadius: "50%", background: ts.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0, marginTop: 2 }}>
+          {ts.icon}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: isArchive ? 400 : 500, color: isArchive ? "#888" : "#111" }}>{n.message}</div>
+          <div style={{ fontSize: 10, color: "#999", marginTop: 3, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {n.timestamp && <span>{fmtDate(n.timestamp)}</span>}
+            <span style={{ padding: "1px 6px", borderRadius: 3, background: ts.bg, color: "#666", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+              {ts.label}
+            </span>
+          </div>
+        </div>
+        {!isArchive && !n.read && (
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#111", flexShrink: 0, marginTop: 6 }} />
+        )}
+      </div>
+    );
   };
 
   return (
@@ -77,64 +121,47 @@ function NotificationsModal({ userEmail, onClose }) {
             )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {unreadCount > 0 && (
+            {tab !== "archive" && unreadCount > 0 && (
               <button onClick={markAllRead}
                 style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#888", textDecoration: "underline" }}>
                 Mark all read
+              </button>
+            )}
+            {tab === "archive" && archive.length > 0 && (
+              <button onClick={clearArchive}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#c00", textDecoration: "underline" }}>
+                Clear Archive
               </button>
             )}
             <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#999" }}>✕</button>
           </div>
         </div>
 
-        {/* Filter bar */}
         <div style={{ padding: "12px 24px", borderBottom: "1px solid #f0f0f0", display: "flex", gap: 6 }}>
-          {[["all", "All"], ["personal", "For You"], ["global", "System"]].map(function(pair) {
-            var key = pair[0], label = pair[1];
-            var count = key === "all" ? notifications.length
-              : key === "personal" ? notifications.filter(function(n) { return n.scope !== "global"; }).length
-              : notifications.filter(function(n) { return n.scope === "global"; }).length;
+          {[
+            ["foryou", "For You", forYou.length],
+            ["system", "System", system.length],
+            ["archive", "Archive", archive.length]
+          ].map(function(pair) {
+            var key = pair[0], label = pair[1], count = pair[2];
             return (
-              <button key={key} onClick={function() { setFilter(key); }}
-                style={Object.assign({}, s.btn(filter === key ? "primary" : "secondary"), { fontSize: 10, padding: "4px 12px" })}>
+              <button key={key} onClick={function() { setTab(key); }}
+                style={Object.assign({}, s.btn(tab === key ? "primary" : "secondary"), { fontSize: 10, padding: "4px 12px" })}>
                 {label} ({count})
               </button>
             );
           })}
         </div>
 
-        {/* Notification list */}
         <div style={{ maxHeight: 400, overflowY: "auto" }}>
           {loading ? (
             <div style={{ padding: 40, textAlign: "center", color: "#999", fontSize: 12 }}>Loading notifications...</div>
-          ) : filtered.length === 0 ? (
-            <div style={{ padding: 40, textAlign: "center", color: "#999", fontSize: 12 }}>No notifications</div>
-          ) : filtered.map(function(n) {
-            var ts = typeStyle(n.type);
-            var isPersonal = n.scope !== "global";
-            return (
-              <div key={n._id} onClick={function() { if (!n.read) markRead(n._id); }}
-                style={{ padding: "12px 24px", borderBottom: "1px solid #f5f5f5", display: "flex", gap: 12, alignItems: "flex-start",
-                  background: n.read ? "transparent" : "#fafafa", cursor: n.read ? "default" : "pointer" }}
-                onMouseEnter={function(e) { e.currentTarget.style.background = "#f8f8f8"; }}
-                onMouseLeave={function(e) { e.currentTarget.style.background = n.read ? "transparent" : "#fafafa"; }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: ts.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0, marginTop: 2 }}>
-                  {ts.icon}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: n.read ? 400 : 500, color: "#111" }}>{n.message}</div>
-                  <div style={{ fontSize: 10, color: "#999", marginTop: 3, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {n.timestamp && <span>{fmtDate(n.timestamp)}</span>}
-                    <span style={{ padding: "1px 6px", borderRadius: 3, background: isPersonal ? "#e8f5e9" : "#f0f0f0", color: isPersonal ? "#2e7d32" : "#888", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                      {isPersonal ? "For You" : "System"}
-                    </span>
-                  </div>
-                </div>
-                {!n.read && (
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#111", flexShrink: 0, marginTop: 6 }} />
-                )}
-              </div>
-            );
+          ) : tabItems.length === 0 ? (
+            <div style={{ padding: 40, textAlign: "center", color: "#999", fontSize: 12 }}>
+              {tab === "archive" ? "No archived notifications" : tab === "foryou" ? "No personal notifications" : "No system notifications"}
+            </div>
+          ) : tabItems.map(function(n) {
+            return renderItem(n, tab === "archive");
           })}
         </div>
 

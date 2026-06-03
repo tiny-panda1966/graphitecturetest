@@ -616,6 +616,16 @@ function Documents({ projectId, projectName }) {
     setUploading(false);
     setTimeout(() => setUploadProgress([]), 2000);
     fetchFiles();
+
+    // Notification: document(s) uploaded
+    var uploadedCount = progress.filter(function(p) { return p.status === "done"; }).length;
+    if (uploadedCount > 0 && DB.isLive()) {
+      DB.addNotification({
+        scope: "global", projectId: projectId, type: "doc_uploaded",
+        message: uploadedCount + " file" + (uploadedCount > 1 ? "s" : "") + " uploaded to " + (projectName || projectId),
+        read: false, timestamp: new Date()
+      }).catch(function() {});
+    }
   };
 
   // Create folder

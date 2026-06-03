@@ -15,7 +15,16 @@ function App() {
       }).catch(function() {});
     }
   };
-  const handleLogout = () => { setLoggedIn(false); setCurrentUser(null); };
+  const handleLogout = () => {
+    if (DB.isLive()) {
+      DB.addNotification({
+        recipientEmail: "tiny.panda@tiny-panda.com", type: "user_logout",
+        message: (currentUser ? currentUser.name || currentUser.email : "User") + " logged out",
+        read: false, timestamp: new Date()
+      }).catch(function() {});
+    }
+    setLoggedIn(false); setCurrentUser(null);
+  };
 
   if (!loggedIn) return <LoginScreen onLogin={handleLogin} />;
   return <MainApp userEmail={currentUser.email} userName={currentUser.name} userRole={currentUser.role} onLogout={handleLogout} />;

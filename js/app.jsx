@@ -173,6 +173,25 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
   function doRealtimeRefresh(payload) {
     var pid = payload.projectId;
 
+      // Always reload global data (charges, stock — small datasets, fast)
+      DB.getCharges().then(function(charges) {
+        if (charges && charges.length > 0) {
+          var grouped = {};
+          charges.forEach(function(c) {
+            var g = c.group || "OTHER";
+            if (!grouped[g]) grouped[g] = [];
+            grouped[g].push({ item: c.item, costpersqm: parseFloat(c.costpersqm) || 0, _id: c._id });
+          });
+          setChargesData(grouped);
+        }
+      }).catch(function() {});
+      DB.getStockList().then(function(items) {
+        if (items) setStockData(items);
+      }).catch(function() {});
+
+      // Reload notification count
+      DB.getUnreadCount(userEmail).then(function(count) { setUnreadCount(count); }).catch(function() {});
+
       if (payload.changeType === "projectCreated" || payload.changeType === "projectDeleted" || !pid) {
         // Reload project list
         DB.getProjects().then(function(projects) {
@@ -360,9 +379,6 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
         user: fullEntry.user,
         timestamp: new Date()
       }).catch(function(err) { console.error("DB: Failed to save activity log", err); });
-
-      // Notify other users via Pusher
-      DB.publishChange(selectedProjectId, fullEntry.type || "update");
     }
   };
 
@@ -443,9 +459,6 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
           console.log("R2 folder deleted:", folderKey, res.ok);
         }).catch(function(err) { console.warn("R2 folder delete failed:", err); });
       }
-
-      // Notify other users
-      DB.publishChange(projectId, "projectDeleted");
     }
   };
 
@@ -599,9 +612,6 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
           }).catch(function(err) { console.warn("Failed to upload artwork for", item.desc, err); });
         });
       }
-
-      // Notify other users
-      DB.publishChange(newId, "projectCreated");
     }
   };
 

@@ -24,22 +24,36 @@ var DB = (function() {
     delete _pending[msg.requestId];
     if (msg.success) {
       cb.resolve(msg.data);
+      // Auto-publish for write operations (not reads)
+      if (cb.action && !READ_ACTIONS[cb.action]) {
+        DB.publishChange(null, cb.action);
+      }
     } else {
       cb.reject(new Error(msg.error || "Request failed"));
     }
   });
 
+  // Read-only actions that should NOT trigger a publish
+  var READ_ACTIONS = {
+    getProjects: 1, getProject: 1, getLineItems: 1, getTasks: 1, getProjectTasks: 1,
+    getTimesheet: 1, getActivityLog: 1, getAllActivityLog: 1, getSchedule: 1,
+    getUserSettings: 1, getAllMembers: 1, getMembers: 1, getNotifications: 1,
+    getUnreadCount: 1, getInvoices: 1, getInvoicesByCustomer: 1, getAllInvoices: 1,
+    getCharges: 1, getStockList: 1, loadFullProject: 1, loadAppData: 1,
+    authenticateUser: 1, getXeroAuthUrl: 1, getXeroConnectionStatus: 1,
+    getXeroContacts: 1, getWorkerAuth: 1, workerRequest: 1, aiChat: 1
+  };
+
   // Send request to Wix parent
   function request(action, payload) {
     return new Promise(function(resolve, reject) {
       if (!_isIframe) {
-        // Running standalone (not in Wix iframe) — reject gracefully
         reject(new Error("Not running inside Wix iframe. Using demo data."));
         return;
       }
 
       var requestId = "gfx-" + (++_requestCounter) + "-" + Date.now();
-      _pending[requestId] = { resolve: resolve, reject: reject };
+      _pending[requestId] = { resolve: resolve, reject: reject, action: action };
 
       // Timeout after 15 seconds
       setTimeout(function() {

@@ -14,44 +14,53 @@ function Scheduler({ allProjects, projectData, onSelectProject, onScheduleChange
   var [dragData, setDragData] = useState(null);
   var [dragPos, setDragPos] = useState(null);
   var dayColRefs = React.useRef([]);
+  var weekDaysRef = React.useRef([]);
+
+  useEffect(function() {
+    if (!dragData) return;
+
+    var onMove = function(e) {
+      setDragPos({ x: e.clientX, y: e.clientY });
+    };
+
+    var onUp = function(e) {
+      var dropDayIdx = -1;
+      dayColRefs.current.forEach(function(ref, idx) {
+        if (ref) {
+          var rect = ref.getBoundingClientRect();
+          if (e.clientX >= rect.left && e.clientX <= rect.right) dropDayIdx = idx;
+        }
+      });
+      if (dropDayIdx >= 0 && weekDaysRef.current[dropDayIdx]) {
+        var newDate = weekDaysRef.current[dropDayIdx].date;
+        var item = dragData.item;
+        var dur = item.duration || 1;
+        var unit = item.durationUnit || "days";
+        var daysSpan = Math.max(1, Math.ceil(durationToDays(dur, unit)));
+        var newDelivery = addDays(newDate, daysSpan);
+        if (onScheduleChange) {
+          onScheduleChange(dragData.project.id, item.id, {
+            startDate: newDate.toISOString().split("T")[0],
+            deliveryDate: newDelivery.toISOString().split("T")[0]
+          });
+        }
+      }
+      setDragData(null);
+      setDragPos(null);
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return function() {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [dragData]);
 
   var handleDragStart = function(e, item, project, dayIdx) {
     e.preventDefault();
-    e.target.setPointerCapture(e.pointerId);
-    setDragData({ item: item, project: project, dayIdx: dayIdx, startX: e.clientX, startY: e.clientY });
+    setDragData({ item: item, project: project, dayIdx: dayIdx });
     setDragPos({ x: e.clientX, y: e.clientY });
-  };
-
-  var handleDragMove = function(e) {
-    if (!dragData) return;
-    setDragPos({ x: e.clientX, y: e.clientY });
-  };
-
-  var handleDragEnd = function(e) {
-    if (!dragData) return;
-    var dropDayIdx = -1;
-    dayColRefs.current.forEach(function(ref, idx) {
-      if (ref) {
-        var rect = ref.getBoundingClientRect();
-        if (e.clientX >= rect.left && e.clientX <= rect.right) dropDayIdx = idx;
-      }
-    });
-    if (dropDayIdx >= 0 && dropDayIdx !== dragData.dayIdx) {
-      var newDate = weekDays[dropDayIdx].date;
-      var item = dragData.item;
-      var dur = item.duration || 1;
-      var unit = item.durationUnit || "days";
-      var daysSpan = Math.max(1, Math.ceil(durationToDays(dur, unit)));
-      var newDelivery = addDays(newDate, daysSpan);
-      if (onScheduleChange) {
-        onScheduleChange(dragData.project.id, item.id, {
-          startDate: newDate.toISOString().split("T")[0],
-          deliveryDate: newDelivery.toISOString().split("T")[0]
-        });
-      }
-    }
-    setDragData(null);
-    setDragPos(null);
   };
 
   var today = new Date();
@@ -137,6 +146,7 @@ function Scheduler({ allProjects, projectData, onSelectProject, onScheduleChange
     return days;
   };
   var weekDays = getWeekDays();
+  weekDaysRef.current = weekDays;
   var weekLabel = fmtDateShort(weekDays[0].date) + " — " + fmtDateShort(weekDays[6].date);
 
   // ── Build all work items for a given day ──
@@ -387,7 +397,7 @@ function Scheduler({ allProjects, projectData, onSelectProject, onScheduleChange
 
       {/* ═══════ VIEW 2: WEEKLY PRODUCTION BOARD ═══════ */}
       {viewMode === "weekly" && (
-        <div onPointerMove={handleDragMove} onPointerUp={handleDragEnd}>
+        <div>
           <WeekNav />
           <div style={s.card}>
             <div style={{ padding: "0 0 4px" }}>

@@ -128,7 +128,10 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
             if (items) setStockData(items);
           }).catch(function(err) { console.error("Failed to load stock:", err); });
           DB.getWorkerAuth().then(function(res) {
-            if (res && res.success) setWorkerCreds({ url: res.url, token: res.token });
+            if (res && res.success) {
+              setWorkerCreds({ url: res.url, token: res.token });
+              DB.setWorkerCreds({ url: res.url, token: res.token });
+            }
           }).catch(function() {});
         });
       }).catch(function(err) {
@@ -141,10 +144,11 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
     }
   }, []);
 
-  // ── Realtime sync — refresh when other users make changes ──
+  // ── Realtime sync via Pusher ──
   useEffect(function() {
     if (!DB.isLive()) return;
     DB.setCurrentUser(userEmail);
+    DB.connectPusher();
 
     DB.onRealtimeUpdate(function(payload) {
       console.log("Realtime refresh triggered:", payload);

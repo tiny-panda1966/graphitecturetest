@@ -10,39 +10,22 @@ var DB = (function() {
   var _requestCounter = 0;
   var _isIframe = (window.parent !== window);
 
-  // Realtime callback
+  // Realtime callback (Pusher)
   var _realtimeCallback = null;
   var _currentUserEmail = null;
+  var _pusherChannel = null;
 
-  // Listen for responses from Wix AND realtime updates
+  // Listen for responses from Wix
   window.addEventListener("message", function(event) {
     var msg = event.data;
-    if (!msg) return;
-
-    // Handle regular bridge responses
-    if (msg.type === "gfx-response") {
-      var cb = _pending[msg.requestId];
-      if (!cb) return;
-      delete _pending[msg.requestId];
-      if (msg.success) {
-        cb.resolve(msg.data);
-      } else {
-        cb.reject(new Error(msg.error || "Request failed"));
-      }
-      return;
-    }
-
-    // Handle realtime messages from widget
-    if (msg.action === "realtimeConnected") {
-      console.log("Realtime connected");
-      return;
-    }
-
-    if (msg.action === "realtimeUpdate" && msg.payload) {
-      console.log("Realtime update:", msg.payload);
-      // Don't refresh if we made this change ourselves
-      if (msg.payload.changedBy && msg.payload.changedBy === _currentUserEmail) return;
-      if (_realtimeCallback) _realtimeCallback(msg.payload);
+    if (!msg || msg.type !== "gfx-response") return;
+    var cb = _pending[msg.requestId];
+    if (!cb) return;
+    delete _pending[msg.requestId];
+    if (msg.success) {
+      cb.resolve(msg.data);
+    } else {
+      cb.reject(new Error(msg.error || "Request failed"));
     }
   });
 
@@ -366,18 +349,48 @@ var DB = (function() {
       return request("addMember", { data: data });
     },
 
-    // ── Realtime ──
+    // ── Realtime (Pusher) ──
+    _workerCreds: null,
+
     setCurrentUser: function(email) {
       _currentUserEmail = email;
     },
 
+    setWorkerCreds: function(creds) {
+      this._workerCreds = creds;
+    },
+
+    connectPusher: function() {
+      if (typeof Pusher === "undefined") {
+        console.warn("Pusher not loaded");
+        return;
+      }
+      var pusher = new Pusher("af4403031bff0f37cc36", { cluster: "eu" });
+      _pusherChannel = pusher.subscribe("graphitecture");
+      _pusherChannel.bind("data-changed", function(data) {
+        console.log("Pusher event received:", data);
+        // Ignore our own changes
+        if (data.changedBy && data.changedBy === _currentUserEmail) return;
+        if (_realtimeCallback) _realtimeCallback(data);
+      });
+      console.log("Pusher connected and subscribed");
+    },
+
     publishChange: function(projectId, changeType) {
-      if (!_isIframe) return;
-      request("publishChange", {
-        projectId: projectId || null,
-        changeType: changeType || "update",
-        changedBy: _currentUserEmail || "unknown"
-      }).catch(function() {}); // fire-and-forget
+      var creds = DB._workerCreds;
+      if (!creds) return;
+      fetch(creds.url + "/notify", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + creds.token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          projectId: projectId || null,
+          changeType: changeType || "update",
+          changedBy: _currentUserEmail || "unknown"
+        })
+      }).catch(function(err) { console.warn("Publish failed:", err); });
     },
 
     onRealtimeUpdate: function(callback) {

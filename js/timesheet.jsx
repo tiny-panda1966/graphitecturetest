@@ -94,61 +94,11 @@ function TimesheetView({ timesheet, setTimesheet, addHistory, projectId, items }
   };
   var cancelEdit = function() { setEditingIdx(null); };
 
-  // ── Sync from Tracker ──
-  var syncFromTracker = function() {
-    if (!items || items.length === 0) return;
-    var newEntries = [];
-    items.forEach(function(item) {
-      if (!item.tasks) return;
-      item.tasks.forEach(function(task) {
-        if (task.status !== TASK_STATUS.COMPLETE && task.status !== TASK_STATUS.IN_PROGRESS) return;
-        if (!task.timeSpent || task.timeSpent <= 0) return;
-        var alreadyExists = timesheet.some(function(t) { return t.taskRef === (item.id + "-" + task.id); });
-        if (alreadyExists) return;
-        var fnName = TASK_FUNCTION_MAP[task.id] || task.label || "General";
-        var fnRate = (FUNCTIONS.find(function(f) { return f.fn === fnName; }) || {}).rate || 25;
-        var hours = parseFloat((task.timeSpent / 60).toFixed(2));
-        newEntries.push({
-          name: task.assignee || "Unassigned", fn: fnName, hours: hours, rate: fnRate,
-          cost: parseFloat((hours * fnRate).toFixed(2)), source: "tracker",
-          taskRef: item.id + "-" + task.id, itemDesc: item.desc, date: todayStr()
-        });
-      });
-    });
-    if (newEntries.length === 0) return;
-    setTimesheet(function(prev) { return prev.concat(newEntries); });
-    addHistory({ type: "timesheet", detail: "Synced " + newEntries.length + " entries from tracker" });
-    if (DB.isLive()) {
-      newEntries.forEach(function(entry) {
-        DB.addTimesheetEntry(Object.assign({}, entry, { projectId: projectId })).catch(function(err) { console.error("DB: Failed to save synced entry", err); });
-      });
-    }
-  };
-
-  var pendingSyncCount = (function() {
-    if (!items) return 0;
-    var count = 0;
-    items.forEach(function(item) {
-      if (!item.tasks) return;
-      item.tasks.forEach(function(task) {
-        if (task.status !== TASK_STATUS.COMPLETE && task.status !== TASK_STATUS.IN_PROGRESS) return;
-        if (!task.timeSpent || task.timeSpent <= 0) return;
-        if (!timesheet.some(function(t) { return t.taskRef === (item.id + "-" + task.id); })) count++;
-      });
-    });
-    return count;
-  })();
-
   return (
     <div className="page-container">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
         <div><div style={s.pageTitle}>Timesheet & Costs</div><div style={s.pageSub}>Full project cost breakdown — production charges, materials consumed + labour</div></div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button style={Object.assign({}, s.btn(pendingSyncCount > 0 ? "primary" : "secondary"), { position: "relative" })}
-            onClick={syncFromTracker} disabled={pendingSyncCount === 0}>
-            Sync from Tracker
-            {pendingSyncCount > 0 && React.createElement("span", { style: { position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "#c00", color: "#fff", fontSize: 9, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center" } }, pendingSyncCount)}
-          </button>
           <button style={s.btn()} onClick={function() { setAdding(true); }}>+ Add Entry</button>
         </div>
       </div>
@@ -407,7 +357,7 @@ function TimesheetView({ timesheet, setTimesheet, addHistory, projectId, items }
               })}
               {timesheet.length === 0 && React.createElement("tr", null,
                 React.createElement("td", { colSpan: 8, style: Object.assign({}, s.td, { textAlign: "center", color: "#999", padding: 32 }) },
-                  "No labour entries yet. Complete tasks in the tracker then click 'Sync from Tracker'."
+                  "No labour entries yet. Labour entries are created automatically when steps are completed in the tracker."
                 )
               )}
             </tbody>

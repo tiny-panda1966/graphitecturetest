@@ -10,17 +10,39 @@ var DB = (function() {
   var _requestCounter = 0;
   var _isIframe = (window.parent !== window);
 
-  // Listen for responses from Wix
+  // Realtime callback
+  var _realtimeCallback = null;
+  var _currentUserEmail = null;
+
+  // Listen for responses from Wix AND realtime updates
   window.addEventListener("message", function(event) {
     var msg = event.data;
-    if (!msg || msg.type !== "gfx-response") return;
-    var cb = _pending[msg.requestId];
-    if (!cb) return;
-    delete _pending[msg.requestId];
-    if (msg.success) {
-      cb.resolve(msg.data);
-    } else {
-      cb.reject(new Error(msg.error || "Request failed"));
+    if (!msg) return;
+
+    // Handle regular bridge responses
+    if (msg.type === "gfx-response") {
+      var cb = _pending[msg.requestId];
+      if (!cb) return;
+      delete _pending[msg.requestId];
+      if (msg.success) {
+        cb.resolve(msg.data);
+      } else {
+        cb.reject(new Error(msg.error || "Request failed"));
+      }
+      return;
+    }
+
+    // Handle realtime messages from widget
+    if (msg.action === "realtimeConnected") {
+      console.log("Realtime connected");
+      return;
+    }
+
+    if (msg.action === "realtimeUpdate" && msg.payload) {
+      console.log("Realtime update:", msg.payload);
+      // Don't refresh if we made this change ourselves
+      if (msg.payload.changedBy && msg.payload.changedBy === _currentUserEmail) return;
+      if (_realtimeCallback) _realtimeCallback(msg.payload);
     }
   });
 
@@ -342,6 +364,24 @@ var DB = (function() {
 
     addMember: function(data) {
       return request("addMember", { data: data });
+    },
+
+    // ── Realtime ──
+    setCurrentUser: function(email) {
+      _currentUserEmail = email;
+    },
+
+    publishChange: function(projectId, changeType) {
+      if (!_isIframe) return;
+      request("publishChange", {
+        projectId: projectId || null,
+        changeType: changeType || "update",
+        changedBy: _currentUserEmail || "unknown"
+      }).catch(function() {}); // fire-and-forget
+    },
+
+    onRealtimeUpdate: function(callback) {
+      _realtimeCallback = callback;
     }
   };
 

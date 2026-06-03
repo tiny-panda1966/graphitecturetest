@@ -141,6 +141,90 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
     }
   }, []);
 
+  // ── Realtime sync — refresh when other users make changes ──
+  useEffect(function() {
+    if (!DB.isLive()) return;
+    DB.setCurrentUser(userEmail);
+
+    DB.onRealtimeUpdate(function(payload) {
+      console.log("Realtime refresh triggered:", payload);
+      var pid = payload.projectId;
+
+      if (payload.changeType === "projectCreated" || payload.changeType === "projectDeleted" || !pid) {
+        // Reload project list
+        DB.getProjects().then(function(projects) {
+          if (!projects) return;
+          var meta = projects.map(function(p) {
+            return {
+              id: p.projectId,
+              info: {
+                customer: p.customer, project: p.project, ref: p.ref,
+                manager: p.manager, email: p.email,
+                dateBooked: toDateInput(p.dateBooked),
+                dateRequired: toDateInput(p.dateRequired),
+                deliveryDate: toDateInput(p.deliveryDate || p.dateRequired),
+                delivery: p.delivery, supplier: p.supplier,
+                folderKey: p.folderKey, shareOnSocials: p.shareOnSocials
+              }
+            };
+          });
+          setProjectsMeta(meta);
+          // If a project was deleted that we're viewing, go to exec
+          if (payload.changeType === "projectDeleted" && pid === selectedProjectId) {
+            setSelectedProjectId(null);
+            setPage("exec");
+          }
+        }).catch(function() {});
+        return;
+      }
+
+      // Reload specific project data
+      DB.loadFullProject(pid).then(function(data) {
+        if (!data || !data.project) return;
+        var dbItems = (data.items || []).map(function(item) {
+          var normalized = Object.assign({}, item, {
+            id: item.itemId || item.id,
+            deliveryDate: toDateInput(item.deliveryDate),
+            duration: item.duration || 1,
+            durationUnit: item.durationUnit || "days"
+          });
+          if (normalized.tasks) {
+            normalized.tasks = normalized.tasks.map(function(t) {
+              return Object.assign({}, t, { id: t.taskId || t.id });
+            });
+          }
+          return normalized;
+        });
+        var dbTimesheet = (data.timesheet || []).map(function(t) {
+          return Object.assign({}, t);
+        });
+
+        setProjectData(function(prev) {
+          var next = Object.assign({}, prev);
+          next[pid] = {
+            items: dbItems,
+            timesheet: dbTimesheet,
+            stages: (prev[pid] && prev[pid].stages) || ["Artwork", "Print", "Laminate", "Cut", "Finish", "QC", "Deliver"],
+            schedule: (data.schedule || []).map(function(si) {
+              return { id: si.itemId || si.id, startDay: si.startDay, span: si.span };
+            })
+          };
+          return next;
+        });
+        setHistoryData(function(prev) {
+          var next = Object.assign({}, prev);
+          next[pid] = (data.activityLog || []).map(function(a) {
+            return { type: a.type, detail: a.detail, user: a.user, time: a.time || "", date: a.date || "" };
+          });
+          return next;
+        });
+        console.log("Realtime: project " + pid + " refreshed");
+      }).catch(function(err) {
+        console.error("Realtime refresh failed:", err);
+      });
+    });
+  }, []);
+
   function loadDemoData() {
     var d = {};
     var h = {};
@@ -334,6 +418,9 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
           console.log("R2 folder deleted:", folderKey, res.ok);
         }).catch(function(err) { console.warn("R2 folder delete failed:", err); });
       }
+
+      // Notify other users
+      DB.publishChange(projectId, "projectDeleted");
     }
   };
 
@@ -487,6 +574,9 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
           }).catch(function(err) { console.warn("Failed to upload artwork for", item.desc, err); });
         });
       }
+
+      // Notify other users
+      DB.publishChange(newId, "projectCreated");
     }
   };
 

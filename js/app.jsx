@@ -145,14 +145,33 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
   }, []);
 
   // ── Realtime sync via Pusher ──
+  var _refreshTimer = React.useRef(null);
+  var _pendingRefresh = React.useRef(null);
+
   useEffect(function() {
     if (!DB.isLive()) return;
     DB.setCurrentUser(userEmail);
     DB.connectPusher();
 
     DB.onRealtimeUpdate(function(payload) {
-      console.log("Realtime refresh triggered:", payload);
+      console.log("Pusher event received:", payload);
       var pid = payload.projectId;
+
+      // Debounce: wait 2 seconds after last event before refreshing
+      _pendingRefresh.current = payload;
+      if (_refreshTimer.current) clearTimeout(_refreshTimer.current);
+      _refreshTimer.current = setTimeout(function() {
+        var p = _pendingRefresh.current;
+        if (!p) return;
+        _pendingRefresh.current = null;
+        console.log("Realtime: refreshing after debounce");
+        doRealtimeRefresh(p);
+      }, 2000);
+    });
+  }, []);
+
+  function doRealtimeRefresh(payload) {
+    var pid = payload.projectId;
 
       if (payload.changeType === "projectCreated" || payload.changeType === "projectDeleted" || !pid) {
         // Reload project list
@@ -226,8 +245,7 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
       }).catch(function(err) {
         console.error("Realtime refresh failed:", err);
       });
-    });
-  }, []);
+  }
 
   function loadDemoData() {
     var d = {};

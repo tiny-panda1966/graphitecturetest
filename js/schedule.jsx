@@ -306,8 +306,8 @@ function Scheduler({ allProjects, projectData, onSelectProject, onScheduleChange
           <div style={{ marginTop: 12, display: "flex", gap: 2, flexWrap: "wrap" }}>
             {(function() {
               var days = [];
-              for (var d = 0; d < totalDays; d++) {
-                var dayDate = addDays(rangeStart, d);
+              for (var d = 0; d < globalRange.totalDays; d++) {
+                var dayDate = addDays(globalRange.start, d);
                 var dayKey = dayDate.toISOString().split("T")[0];
                 var isToday = dayDate.getTime() === today.getTime();
                 var isWeekend = dayDate.getDay() === 0 || dayDate.getDay() === 6;

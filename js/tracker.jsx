@@ -2,7 +2,7 @@
 // PRODUCTION TRACKER — Task-Level Workflow
 // ═══════════════════════════════════════════════════════════════
 
-function Tracker({ items, setItems, addHistory, highlightItemDescs, projectId, allProjects, onSelectProject, currentProject, chargesData, userPrefs, onToggleFavourite, onAddToRecent, stockData, workerCreds }) {
+function Tracker({ items, setItems, addHistory, highlightItemDescs, projectId, allProjects, onSelectProject, currentProject, chargesData, userPrefs, onToggleFavourite, onAddToRecent, stockData, workerCreds, timesheet, setTimesheet, userName, userEmail }) {
 
   var [expandedItems, setExpandedItems] = useState({});
   var [statusModal, setStatusModal] = useState(null);
@@ -158,6 +158,29 @@ function Tracker({ items, setItems, addHistory, highlightItemDescs, projectId, a
       DB.updateLineItem(projectId, info.itemId, {
         status: calcItemStatus(updatedTasks)
       }).catch(function(err) { console.error("DB: Failed to update line item status", err); });
+    }
+
+    // Auto-create timesheet entry if time was logged
+    if (modalTime > 0 && setTimesheet) {
+      var taskRef = info.itemId + "-" + info.taskId;
+      var alreadyExists = (timesheet || []).some(function(t) { return t.taskRef === taskRef; });
+      if (!alreadyExists) {
+        var fnName = TASK_FUNCTION_MAP[info.taskId] || (task ? task.label : "General");
+        var fnRate = (FUNCTIONS.find(function(f) { return f.fn === fnName; }) || {}).rate || 25;
+        var hours = parseFloat((modalTime / 60).toFixed(2));
+        var entry = {
+          name: (task && task.assignee) || userName || "Unassigned",
+          fn: fnName, hours: hours, rate: fnRate,
+          cost: parseFloat((hours * fnRate).toFixed(2)),
+          source: "tracker", taskRef: taskRef,
+          itemDesc: item.desc, date: todayStr()
+        };
+        setTimesheet(function(prev) { return prev.concat([entry]); });
+        if (DB.isLive()) {
+          DB.addTimesheetEntry(Object.assign({}, entry, { projectId: projectId }))
+            .catch(function(err) { console.error("DB: Failed to save timesheet entry", err); });
+        }
+      }
     }
   };
 

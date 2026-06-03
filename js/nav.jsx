@@ -13,7 +13,6 @@ function UserMenu({ userEmail, userName, userRole, onLogout, projectRef, onMenuA
 
   var menuItems = [
     { icon: IC.profile, label: "Profile & Account", sub: "Manage your details", action: "profile" },
-    { icon: IC.bell, label: "Notifications", sub: unreadCount > 0 ? unreadCount + " unread" : "No new notifications", badge: unreadCount || 0, action: "notifications" },
     { icon: IC.settings, label: "Settings", sub: "Preferences & display", action: "settings" },
     { icon: IC.activity, label: "Activity Log", sub: "Recent changes", action: "activity" }
   ];

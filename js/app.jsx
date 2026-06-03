@@ -266,6 +266,27 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
       });
   }
 
+  // ── Notification sound when unread count increases ──
+  var prevUnreadRef = React.useRef(unreadCount);
+  useEffect(function() {
+    if (unreadCount > prevUnreadRef.current) {
+      try {
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        osc.type = "sine";
+        gain.gain.value = 0.15;
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.3);
+      } catch(e) { /* audio not available */ }
+    }
+    prevUnreadRef.current = unreadCount;
+  }, [unreadCount]);
+
   function loadDemoData() {
     var d = {};
     var h = {};
@@ -792,7 +813,7 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
         <div className="nav-links">
           {pages.map(p => <button key={p.id} style={s.navLink(page === p.id)} onClick={() => navTo(p.id)}>{p.label}</button>)}
         </div>
-        <div style={{ display: "flex", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <button className={`ai-nav-btn ${aiPanelOpen ? "active" : ""}`} onClick={() => setAiPanelOpen(!aiPanelOpen)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 2a10 10 0 0110 10 10 10 0 01-10 10A10 10 0 012 12 10 10 0 0112 2z"/>
@@ -800,9 +821,21 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
             </svg>
             AI
           </button>
+          <div style={{ position: "relative", cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center" }}
+            onClick={() => handleMenuAction("notifications")}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={unreadCount > 0 ? "#fff" : "#888"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 01-3.46 0"/>
+            </svg>
+            {unreadCount > 0 && (
+              <div style={{ position: "absolute", top: 2, right: 4, minWidth: 16, height: 16, borderRadius: "50%", background: "#c00", color: "#fff", fontSize: 9, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>
+                {unreadCount}
+              </div>
+            )}
+          </div>
           <UserMenu userEmail={userEmail} userName={userName} userRole={userRole} onLogout={onLogout}
             projectRef={currentProject && page !== "exec" ? currentProject.info.ref + " · " + currentProject.info.customer : null}
-            onMenuAction={handleMenuAction} unreadCount={unreadCount} />
+            onMenuAction={handleMenuAction} unreadCount={0} />
         </div>
       </nav>
 

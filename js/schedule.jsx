@@ -48,11 +48,20 @@ function Scheduler({ allProjects, projectData, onSelectProject, onScheduleChange
       var daysSpan = Math.max(1, Math.ceil(durationToDays(dur, unit)));
       var newDelivery = addDays(newDate, daysSpan);
       console.log("Rescheduling to:", newDate.toISOString().split("T")[0]);
+      console.log("typeof onScheduleChange:", typeof onScheduleChange);
       if (onScheduleChange) {
-        onScheduleChange(dragData.project.id, item.id, {
-          startDate: newDate.toISOString().split("T")[0],
-          deliveryDate: newDelivery.toISOString().split("T")[0]
-        });
+        console.log("CALLING onScheduleChange now...");
+        try {
+          onScheduleChange(dragData.project.id, item.id, {
+            startDate: newDate.toISOString().split("T")[0],
+            deliveryDate: newDelivery.toISOString().split("T")[0]
+          });
+          console.log("onScheduleChange completed");
+        } catch(err) {
+          console.error("onScheduleChange ERROR:", err);
+        }
+      } else {
+        console.log("onScheduleChange is FALSY!");
       }
     }
     setDragData(null);

@@ -43,8 +43,10 @@ function NotificationsModal({ userEmail, onClose, onCountUpdate }) {
   };
 
   var clearArchive = function() {
-    if (DB.isLive() && userEmail) {
-      DB.clearReadNotifications(userEmail).then(function(result) {
+    var archiveIds = archive.map(function(n) { return n._id; });
+    console.log("Clearing archive, IDs:", archiveIds);
+    if (DB.isLive() && archiveIds.length > 0) {
+      DB.clearReadNotifications(userEmail, archiveIds).then(function(result) {
         console.log("Clear archive result:", result);
       }).catch(function(err) { console.error("DB: Failed to clear archive", err); });
     }

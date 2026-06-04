@@ -44,7 +44,9 @@ function NotificationsModal({ userEmail, onClose, onCountUpdate }) {
 
   var clearArchive = function() {
     if (DB.isLive() && userEmail) {
-      DB.clearReadNotifications(userEmail).catch(function(err) { console.error("DB: Failed to clear archive", err); });
+      DB.clearReadNotifications(userEmail).then(function(result) {
+        console.log("Clear archive result:", result);
+      }).catch(function(err) { console.error("DB: Failed to clear archive", err); });
     }
     setNotifications(function(prev) {
       return prev.filter(function(n) { return !n.read; });

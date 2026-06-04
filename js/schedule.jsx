@@ -16,56 +16,47 @@ function Scheduler({ allProjects, projectData, onSelectProject, onScheduleChange
   var dayColRefs = React.useRef([]);
   var weekDaysRef = React.useRef([]);
 
-  useEffect(function() {
-    if (!dragData) return;
-    console.log("Drag started:", dragData.item.desc);
-
-    var onMove = function(e) {
-      setDragPos({ x: e.clientX, y: e.clientY });
-    };
-
-    var onUp = function(e) {
-      console.log("Drag ended at:", e.clientX, e.clientY);
-      var dropDayIdx = -1;
-      dayColRefs.current.forEach(function(ref, idx) {
-        if (ref) {
-          var rect = ref.getBoundingClientRect();
-          if (e.clientX >= rect.left && e.clientX <= rect.right) dropDayIdx = idx;
-        }
-      });
-      console.log("Drop day index:", dropDayIdx);
-      if (dropDayIdx >= 0 && weekDaysRef.current[dropDayIdx]) {
-        var newDate = weekDaysRef.current[dropDayIdx].date;
-        var item = dragData.item;
-        var dur = item.duration || 1;
-        var unit = item.durationUnit || "days";
-        var daysSpan = Math.max(1, Math.ceil(durationToDays(dur, unit)));
-        var newDelivery = addDays(newDate, daysSpan);
-        console.log("Rescheduling to:", newDate.toISOString().split("T")[0], "delivery:", newDelivery.toISOString().split("T")[0]);
-        if (onScheduleChange) {
-          onScheduleChange(dragData.project.id, item.id, {
-            startDate: newDate.toISOString().split("T")[0],
-            deliveryDate: newDelivery.toISOString().split("T")[0]
-          });
-        }
-      }
-      setDragData(null);
-      setDragPos(null);
-    };
-
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-    return function() {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-    };
-  }, [dragData]);
-
   var handleDragStart = function(e, item, project, dayIdx) {
     e.stopPropagation();
+    e.preventDefault();
     console.log("Drag init:", item.desc, "from day", dayIdx);
     setDragData({ item: item, project: project, dayIdx: dayIdx });
     setDragPos({ x: e.clientX, y: e.clientY });
+  };
+
+  var handleDragMove = function(e) {
+    if (!dragData) return;
+    setDragPos({ x: e.clientX, y: e.clientY });
+  };
+
+  var handleDragEnd = function(e) {
+    if (!dragData) return;
+    console.log("Drag ended at:", e.clientX, e.clientY);
+    var dropDayIdx = -1;
+    dayColRefs.current.forEach(function(ref, idx) {
+      if (ref) {
+        var rect = ref.getBoundingClientRect();
+        if (e.clientX >= rect.left && e.clientX <= rect.right) dropDayIdx = idx;
+      }
+    });
+    console.log("Drop day index:", dropDayIdx);
+    if (dropDayIdx >= 0 && weekDaysRef.current[dropDayIdx]) {
+      var newDate = weekDaysRef.current[dropDayIdx].date;
+      var item = dragData.item;
+      var dur = item.duration || 1;
+      var unit = item.durationUnit || "days";
+      var daysSpan = Math.max(1, Math.ceil(durationToDays(dur, unit)));
+      var newDelivery = addDays(newDate, daysSpan);
+      console.log("Rescheduling to:", newDate.toISOString().split("T")[0]);
+      if (onScheduleChange) {
+        onScheduleChange(dragData.project.id, item.id, {
+          startDate: newDate.toISOString().split("T")[0],
+          deliveryDate: newDelivery.toISOString().split("T")[0]
+        });
+      }
+    }
+    setDragData(null);
+    setDragPos(null);
   };
 
   var today = new Date();
@@ -449,13 +440,6 @@ function Scheduler({ allProjects, projectData, onSelectProject, onScheduleChange
               </div>
             </div>
           </div>
-          {/* Drag ghost */}
-          {dragData && dragPos && React.createElement("div", {
-            style: { position: "fixed", left: dragPos.x + 10, top: dragPos.y - 10, width: 160, padding: "6px 10px", background: "#111", color: "#fff", borderRadius: 6, fontSize: 10, fontWeight: 500, pointerEvents: "none", zIndex: 9999, boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }
-          },
-            React.createElement("div", null, dragData.item.desc),
-            React.createElement("div", { style: { fontSize: 9, color: "#aaa", marginTop: 2 } }, dragData.project.info.project)
-          )}
         </div>
       )}
 
@@ -562,6 +546,19 @@ function Scheduler({ allProjects, projectData, onSelectProject, onScheduleChange
           )
         );
       })()}
+      {/* ── Drag overlay (captures all mouse events during drag) ── */}
+      {dragData && React.createElement("div", {
+        onMouseMove: handleDragMove,
+        onMouseUp: handleDragEnd,
+        style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9998, cursor: "grabbing" }
+      })}
+      {/* ── Drag ghost ── */}
+      {dragData && dragPos && React.createElement("div", {
+        style: { position: "fixed", left: dragPos.x + 10, top: dragPos.y - 10, width: 160, padding: "6px 10px", background: "#111", color: "#fff", borderRadius: 6, fontSize: 10, fontWeight: 500, pointerEvents: "none", zIndex: 9999, boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }
+      },
+        React.createElement("div", null, dragData.item.desc),
+        React.createElement("div", { style: { fontSize: 9, color: "#aaa", marginTop: 2 } }, dragData.project.info.project)
+      )}
     </div>
   );
 }

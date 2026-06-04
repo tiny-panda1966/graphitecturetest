@@ -18,12 +18,14 @@ function Scheduler({ allProjects, projectData, onSelectProject, onScheduleChange
 
   useEffect(function() {
     if (!dragData) return;
+    console.log("Drag started:", dragData.item.desc);
 
     var onMove = function(e) {
       setDragPos({ x: e.clientX, y: e.clientY });
     };
 
     var onUp = function(e) {
+      console.log("Drag ended at:", e.clientX, e.clientY);
       var dropDayIdx = -1;
       dayColRefs.current.forEach(function(ref, idx) {
         if (ref) {
@@ -31,6 +33,7 @@ function Scheduler({ allProjects, projectData, onSelectProject, onScheduleChange
           if (e.clientX >= rect.left && e.clientX <= rect.right) dropDayIdx = idx;
         }
       });
+      console.log("Drop day index:", dropDayIdx);
       if (dropDayIdx >= 0 && weekDaysRef.current[dropDayIdx]) {
         var newDate = weekDaysRef.current[dropDayIdx].date;
         var item = dragData.item;
@@ -38,6 +41,7 @@ function Scheduler({ allProjects, projectData, onSelectProject, onScheduleChange
         var unit = item.durationUnit || "days";
         var daysSpan = Math.max(1, Math.ceil(durationToDays(dur, unit)));
         var newDelivery = addDays(newDate, daysSpan);
+        console.log("Rescheduling to:", newDate.toISOString().split("T")[0], "delivery:", newDelivery.toISOString().split("T")[0]);
         if (onScheduleChange) {
           onScheduleChange(dragData.project.id, item.id, {
             startDate: newDate.toISOString().split("T")[0],
@@ -49,16 +53,17 @@ function Scheduler({ allProjects, projectData, onSelectProject, onScheduleChange
       setDragPos(null);
     };
 
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
     return function() {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
     };
   }, [dragData]);
 
   var handleDragStart = function(e, item, project, dayIdx) {
-    e.preventDefault();
+    e.stopPropagation();
+    console.log("Drag init:", item.desc, "from day", dayIdx);
     setDragData({ item: item, project: project, dayIdx: dayIdx });
     setDragPos({ x: e.clientX, y: e.clientY });
   };
@@ -428,8 +433,8 @@ function Scheduler({ allProjects, projectData, onSelectProject, onScheduleChange
                       var isDragging = dragData && dragData.item.id === w.item.id && dragData.project.id === w.project.id;
                       return React.createElement("div", {
                         key: wi,
-                        style: { marginBottom: 6, padding: "6px 8px", borderRadius: 6, border: isDragging ? "2px solid #111" : "1px solid #eee", background: isDragging ? "#f0f0f0" : "#fff", fontSize: 10, cursor: "grab", opacity: isDragging ? 0.4 : 1, touchAction: "none", userSelect: "none" },
-                        onPointerDown: function(e) { handleDragStart(e, w.item, w.project, di); }
+                        style: { marginBottom: 6, padding: "6px 8px", borderRadius: 6, border: isDragging ? "2px solid #111" : "1px solid #eee", background: isDragging ? "#f0f0f0" : "#fff", fontSize: 10, cursor: "grab", opacity: isDragging ? 0.4 : 1, userSelect: "none" },
+                        onMouseDown: function(e) { handleDragStart(e, w.item, w.project, di); }
                       },
                         React.createElement("div", { style: { fontWeight: 500, fontSize: 11, marginBottom: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, w.item.desc),
                         React.createElement("div", { style: { color: "#888", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, w.project.info.project),

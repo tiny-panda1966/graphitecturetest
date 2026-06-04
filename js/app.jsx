@@ -888,7 +888,7 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
         {page === "scheduler" && <Scheduler allProjects={liveProjects} projectData={projectData} onSelectProject={(id) => { setSelectedProjectId(id); setPage("tracker"); }} onScheduleChange={function(pid, itemIdOrSchedule, dataOrItems) {
             console.log("onScheduleChange ENTERED:", typeof pid, pid, typeof itemIdOrSchedule, itemIdOrSchedule, typeof dataOrItems, dataOrItems);
             // Handle drag-and-drop date change: (pid, itemId, { startDate, deliveryDate })
-            if (typeof itemIdOrSchedule === "string" && dataOrItems && dataOrItems.deliveryDate) {
+            if ((typeof itemIdOrSchedule === "string" || typeof itemIdOrSchedule === "number") && dataOrItems && dataOrItems.deliveryDate) {
               var itemId = itemIdOrSchedule;
               var newDelivery = dataOrItems.deliveryDate;
               console.log("Schedule update: pid=" + pid + " itemId=" + itemId + " newDelivery=" + newDelivery);

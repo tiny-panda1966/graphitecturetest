@@ -886,6 +886,7 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
         {page === "exec" && <ProjectsList projects={liveProjects} onSelect={goToProject} activeProjectId={selectedProjectId} onCreateNew={() => setShowCreateWizard(true)} onDeleteProject={handleDeleteProject} highlightItemDescs={highlightItemDescs} />}
         {page === "dashboard" && <Dashboard allProjects={projectsMeta} projectData={projectData} onSelectProject={(id) => { setSelectedProjectId(id); setPage("tracker"); }} />}
         {page === "scheduler" && <Scheduler allProjects={liveProjects} projectData={projectData} onSelectProject={(id) => { setSelectedProjectId(id); setPage("tracker"); }} onScheduleChange={function(pid, itemIdOrSchedule, dataOrItems) {
+            console.log("onScheduleChange ENTERED:", typeof pid, pid, typeof itemIdOrSchedule, itemIdOrSchedule, typeof dataOrItems, dataOrItems);
             // Handle drag-and-drop date change: (pid, itemId, { startDate, deliveryDate })
             if (typeof itemIdOrSchedule === "string" && dataOrItems && dataOrItems.deliveryDate) {
               var itemId = itemIdOrSchedule;

@@ -56,7 +56,7 @@ function Scheduler({ allProjects, projectData, onSelectProject, onScheduleChange
             startDate: newDate.toISOString().split("T")[0],
             deliveryDate: newDelivery.toISOString().split("T")[0]
           });
-          console.log("onScheduleChange completed");
+          console.log("onScheduleChange completed, args were:", typeof dragData.project.id, dragData.project.id, typeof item.id, item.id);
         } catch(err) {
           console.error("onScheduleChange ERROR:", err);
         }

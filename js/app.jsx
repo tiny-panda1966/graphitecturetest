@@ -212,7 +212,7 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
       // Reload notification count
       DB.getUnreadCount(userEmail).then(function(count) { setUnreadCount(count); }).catch(function() {});
 
-      if (payload.changeType === "projectCreated" || payload.changeType === "projectDeleted" || !pid) {
+      if (payload.changeType === "projectCreated" || payload.changeType === "projectDeleted") {
         // Reload project list
         DB.getProjects().then(function(projects) {
           if (!projects) return;
@@ -231,7 +231,6 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
             };
           });
           setProjectsMeta(meta);
-          // If a project was deleted that we're viewing, go to exec
           if (payload.changeType === "projectDeleted" && pid === selectedProjectId) {
             setSelectedProjectId(null);
             setPage("exec");
@@ -240,8 +239,11 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
         return;
       }
 
-      // Reload specific project data
-      DB.loadFullProject(pid).then(function(data) {
+      // Reload specific project data (use pid from event, or fall back to currently selected project)
+      var refreshPid = pid || selectedProjectId;
+      if (!refreshPid) return;
+
+      DB.loadFullProject(refreshPid).then(function(data) {
         if (!data || !data.project) return;
         var dbItems = (data.items || []).map(function(item) {
           var normalized = Object.assign({}, item, {
@@ -263,7 +265,7 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
 
         setProjectData(function(prev) {
           var next = Object.assign({}, prev);
-          next[pid] = {
+          next[refreshPid] = {
             items: dbItems,
             timesheet: dbTimesheet,
             stages: (prev[pid] && prev[pid].stages) || ["Artwork", "Print", "Laminate", "Cut", "Finish", "QC", "Deliver"],
@@ -280,7 +282,7 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
           });
           return next;
         });
-        console.log("Realtime: project " + pid + " refreshed");
+        console.log("Realtime: project " + refreshPid + " refreshed");
       }).catch(function(err) {
         console.error("Realtime refresh failed:", err);
       });

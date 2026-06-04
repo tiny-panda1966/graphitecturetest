@@ -890,12 +890,24 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
             if (typeof itemIdOrSchedule === "string" && dataOrItems && dataOrItems.deliveryDate) {
               var itemId = itemIdOrSchedule;
               var newDelivery = dataOrItems.deliveryDate;
+              console.log("Schedule update: pid=" + pid + " itemId=" + itemId + " newDelivery=" + newDelivery);
               setProjectData(function(prev) {
                 var next = Object.assign({}, prev);
                 var updated = Object.assign({}, next[pid]);
+                var found = false;
                 updated.items = (updated.items || []).map(function(i) {
-                  return i.id === itemId ? Object.assign({}, i, { deliveryDate: newDelivery }) : i;
+                  if (i.id === itemId) { found = true; return Object.assign({}, i, { deliveryDate: newDelivery }); }
+                  return i;
                 });
+                console.log("Item found by id:", found, "items count:", (updated.items || []).length);
+                if (!found) {
+                  // Try _id field
+                  updated.items = (updated.items || []).map(function(i) {
+                    if (i._id === itemId) { found = true; return Object.assign({}, i, { deliveryDate: newDelivery }); }
+                    return i;
+                  });
+                  console.log("Item found by _id:", found);
+                }
                 next[pid] = updated;
                 return next;
               });

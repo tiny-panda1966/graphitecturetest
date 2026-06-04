@@ -32,6 +32,8 @@ function App() {
 
 function MainApp({ userEmail, userName, userRole, onLogout }) {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
+  var selectedProjectIdRef = React.useRef(null);
+  useEffect(function() { selectedProjectIdRef.current = selectedProjectId; }, [selectedProjectId]);
   const [page, setPage] = useState("exec");
   const [mounted, setMounted] = useState(false);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
@@ -240,7 +242,7 @@ function MainApp({ userEmail, userName, userRole, onLogout }) {
       }
 
       // Reload specific project data (use pid from event, or fall back to currently selected project)
-      var refreshPid = pid || selectedProjectId;
+      var refreshPid = pid || selectedProjectIdRef.current;
       if (!refreshPid) return;
 
       DB.loadFullProject(refreshPid).then(function(data) {
